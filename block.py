@@ -6,7 +6,7 @@ class Block:
         self.id = id
         self.x = x
         self.y = y
-        self.image = self.set_image()
+        #self.image = self.set_image()
 
     def set_image(self):
         if self.id == 1:
