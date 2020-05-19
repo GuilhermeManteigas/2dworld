@@ -12,16 +12,22 @@ class WorldGenerator:
 
     def generate(self):
         for i in range(self.height):
-            if i > 10:
-                for j in range(self.width):
-                    self.world.append(Block(self.get_id(i), j, i))
+            #if i > 10:
+            for j in range(self.width):
+                self.world.append(Block(self.get_id(i), j, i))
 
     def get_world(self):
         print(self.world)
         return self.world
 
     def get_id(self, height):
-        if height == 11:
+        if height < 10:
+            ran = random.randint(0, 3)
+            if ran == 2:
+                return 2
+            else:
+                return 0
+        elif height == 11:
             return 3
         elif height <= 14:
             return 1
