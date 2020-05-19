@@ -3,8 +3,12 @@ from block import Block
 
 
 class WorldGenerator:
-    def __init__(self, width, seed=random.randint(1, 1000)):
-        self.height = 100
+
+    surface_level = 50
+    dirt_depth = 30
+
+    def __init__(self, width, height, seed=random.randint(1, 1000)):
+        self.height = height
         self.width = width
         self.seed = seed
         self.world = []
@@ -21,15 +25,15 @@ class WorldGenerator:
         return self.world
 
     def get_id(self, height):
-        if height < 10:
+        if height < self.surface_level:
             ran = random.randint(0, 3)
             if ran == 2:
                 return 2
             else:
                 return 0
-        elif height == 11:
+        elif height == self.surface_level:
             return 3
-        elif height <= 14:
+        elif height <= self.surface_level + self.dirt_depth:
             return 1
         else:
             return 2

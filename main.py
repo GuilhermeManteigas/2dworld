@@ -8,12 +8,18 @@ import time
 
 Cube_Size = 64#50#25
 Game_Tick = 0.1
+World_width = 200
+World_height = 500
 
 pygame.init()
 clock = pygame.time.Clock()
 running = True
 screen_width = 1920
 screen_height = 1080
+map_min_x = 0 + screen_width/2
+map_max_x = World_width * Cube_Size - screen_width/2
+map_min_y = 0 + screen_height/2
+map_max_y = World_height * Cube_Size - screen_height/2
 camera_x = 0
 camera_y = 0
 window = pygame.display.set_mode((screen_width, screen_height))
@@ -22,7 +28,8 @@ window.fill((255, 255, 255))
 #world = WorldGenerator(500).get_world()
 world = []
 world_section = []
-player = Player(Cube_Size*14, Cube_Size*7)
+blocks_around_p = []
+player = Player(Cube_Size*World_width/2, Cube_Size * (WorldGenerator.surface_level - 1))#Player(Cube_Size*14, Cube_Size*7)
 camera_width = screen_width * player.x
 camera_height = screen_height * player.y
 true_scroll = [0, 0]
@@ -45,20 +52,20 @@ image_resources = load_image_resources()
 
 
 def save_world():
-    with open('world.txt', 'wb') as fp:
+    with open('world.pkl', 'wb') as fp:
         pickle.dump(world, fp)
         print("world saved")
 
 
 def load_world():
     try:
-        with open('world.txt', 'rb') as fp:
+        with open('world.pkl', 'rb') as fp:
             global world
             world = pickle.load(fp)
             print("world loaded")
     except:
         if world == []:
-            world = WorldGenerator(500).get_world()
+            world = WorldGenerator(World_width, World_height).get_world()
             print("world created")
 
 
@@ -67,6 +74,10 @@ def show_fps(window, clock):
     black = pygame.Color("black")
     fps_overlay = FPS_FONT.render(str(int(clock.get_fps())), True, black)
     window.blit(fps_overlay, (0, 0))
+    #Coords on screen
+    coors_overlay = FPS_FONT.render(str((int(player.x / Cube_Size), int(player.y / Cube_Size))), True, black)
+    window.blit(coors_overlay, (0, 20))
+
 
 
 def draw_player():
@@ -81,14 +92,10 @@ def update_world_section():
     while running:
         temp_world = []
         for i in world:
-            #if i.x*Cube_Size < screen_width and i.y*Cube_Size < screen_height:
-            #if (player.x - (screen_width/2)) - Cube_Size * 5 < i.x * Cube_Size < (player.x + (screen_width/2)) + Cube_Size * 5 and (player.y - (screen_height/2)) - Cube_Size * 5 < i.y * Cube_Size < (player.y + (screen_height/2)) + Cube_Size * 5:
             if abs(player.x - i.x*Cube_Size) < radiusx and abs(player.y - i.y*Cube_Size) < radiusy:
                 temp_world.append(i)
-            #elif i.x - player.x < radius and player.y - i.y < radius:
-                #temp_world.append(i)
         world_section = temp_world[:]
-        time.sleep(Game_Tick*2)
+        time.sleep(Game_Tick*5)
 
 
 def draw_world():
@@ -109,13 +116,17 @@ def draw_world():
                     #print("block:")
                     #print(i.x, i.y)
         counter = idx
-    print(counter)
+    #print(counter)
 
 
 def player_smooth_movement(px, py):
     smoothness = 15
     counterx = 0
     countery = 0
+    if not (map_min_x < player.x + px < map_max_x):
+        px = 0
+    if not (map_min_y < player.y + py < map_max_y):
+        py = 0
     if px != 0 and py != 0:
         #for i in range(abs(int(px / smoothness) + int(px % smoothness))):
         for i in range(smoothness):
@@ -157,43 +168,89 @@ def player_smooth_movement(px, py):
         else:
             player.y += -64 - countery
             countery += -64 - countery
-    print(player.x,player.y)
+    #print(player.x, player.y)
     #print(countery)
 
 
 
 def player_movement_handler():
+    counter = 0
     while running:
+        up = False
+        blocks_around_player()
         keys = pygame.key.get_pressed()
         if keys[pygame.K_a] and keys[pygame.K_w]:
-            player_smooth_movement(-Cube_Size, -Cube_Size)
+            up = True
+            if blocks_around_p[0].id == 0 and blocks_around_p[1].id == 0 and blocks_around_p[3].id == 0 :
+                player_smooth_movement(-Cube_Size, -Cube_Size)
         elif keys[pygame.K_a] and keys[pygame.K_s]:
-            player_smooth_movement(-Cube_Size, Cube_Size)
+            if blocks_around_p[3].id == 0 and blocks_around_p[6].id == 0 and blocks_around_p[7].id == 0:
+                player_smooth_movement(-Cube_Size, Cube_Size)
         elif keys[pygame.K_d] and keys[pygame.K_w]:
-            player_smooth_movement(Cube_Size, -Cube_Size)
+            up = True
+            if blocks_around_p[1].id == 0 and blocks_around_p[2].id == 0 and blocks_around_p[5].id == 0:
+                player_smooth_movement(Cube_Size, -Cube_Size)
         elif keys[pygame.K_d] and keys[pygame.K_s]:
-            player_smooth_movement(Cube_Size, Cube_Size)
+            if blocks_around_p[5].id == 0 and blocks_around_p[7].id == 0 and blocks_around_p[8].id == 0:
+                player_smooth_movement(Cube_Size, Cube_Size)
         elif keys[pygame.K_a]:
             player_smooth_movement(-Cube_Size, 0)
         elif keys[pygame.K_d]:
+            blocks_around_player()
             player_smooth_movement(+Cube_Size, 0)
         elif keys[pygame.K_w]:
+            up = True
             player_smooth_movement(0, -Cube_Size)
         elif keys[pygame.K_s]:
             player_smooth_movement(0, +Cube_Size)
 
+        if up == False:
+            gravity()
+        else:
+            counter += 1
+        collision_detector()
         time.sleep(Game_Tick/12)
 
+
+def blocks_around_player():
+    global blocks_around_p
+    blocks = []
+    for i in world_section:
+        if player.x - Cube_Size <= i.x * Cube_Size <= player.x + Cube_Size and player.y - Cube_Size <= i.y * Cube_Size <= player.y + Cube_Size:
+            blocks.append(i)
+    #print(len(blocks))
+    blocks_around_p = blocks
+
+
+def collision_detector():
+    for i in blocks_around_p:
+        recti = pygame.Rect((i.x, i.y), (i.x + Cube_Size, i.y + Cube_Size))
+        rectp = pygame.Rect((player.x, player.y), (player.x + Cube_Size, player.y + Cube_Size))
+        if rectp.colliderect(recti):
+            print("colided")
+        if player.x == i.x * Cube_Size and player.y == i.y * Cube_Size and i.id != 0:
+            print("colided cords")
+            i.id = 0
+        #print(player.x)
+        #print(i.x*64)
+
+
 def gravity():
-    while running:
-        print()
-        time.sleep(Game_Tick)
+    #while running:
+        print("s")
+        temp_list = blocks_around_p.copy()
+        if len(temp_list) > 7:
+            if temp_list[7].id == 0:
+                player_smooth_movement(0, +Cube_Size)
+        #time.sleep(Game_Tick)
 
 
 player_movement = threading.Thread(target=player_movement_handler)
 player_movement.start()
 update_visible_world = threading.Thread(target=update_world_section)
 update_visible_world.start()
+#gravity = threading.Thread(target=gravity)
+#gravity.start()
 
 load_world()
 
