@@ -26,10 +26,10 @@ class WorldGenerator:
 
     def get_id(self, height):
         if height < self.surface_level:
-            ran = random.randint(0, 3)
-            if ran == 2:
-                return 2
-            else:
+            #ran = random.randint(0, 3)
+            #if ran == 2:
+            #    return 2
+            #else:
                 return 0
         elif height == self.surface_level:
             return 3
