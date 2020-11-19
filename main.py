@@ -40,7 +40,7 @@ def load_image_resources():
     ############### Blocks ##############################
     images = []
     ########## index 0 reserved for future use ##########
-    images.append(pygame.image.load('dirt.png'))
+    images.append(pygame.image.load('dirt.png').convert())
     #####################################################
     images.append(pygame.image.load('dirt.png').convert())  # id = 1
     images.append(pygame.image.load('stone.png').convert())  # id = 2

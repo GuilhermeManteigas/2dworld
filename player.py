@@ -11,7 +11,7 @@ class Player:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.image = pygame.image.load('player.png')
+        self.image = pygame.image.load('player.png').convert_alpha()
         self.health = 100
         self.falling_speed = 1
         self.mining_delay = 5
